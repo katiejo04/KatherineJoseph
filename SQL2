@@ -1,0 +1,152 @@
+# Load %%sql magic
+%load_ext sql
+
+# Standard Imports
+import sqlite3
+import pandas as pd
+
+# Database connection
+%sql sqlite:///buan6510/data/Garment/HW9_GarmentTags.db
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Load the data from csv files
+# ONLY RUN THIS ONCE TO AVOID DATA DUPLICATION
+data_conf = [('GarmentTags_import','HW9_garment_tags.csv'),('ServiceTypes_import','HW9_ServiceTypes.csv')]
+conn = sqlite3.connect('buan6510/data/Garment/HW9_GarmentTags.db') 
+with conn:
+  for tbl,fname in data_conf:
+    print(tbl,fname)
+    df = pd.read_csv(fname)
+    df.to_sql(tbl,conn,if_exists='append',index=False)
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+%%sql
+
+DROP TABLE IF EXISTS customers;
+CREATE TABLE customers(
+    cust_id INTEGER PRIMARY KEY,
+    city TEXT,
+    zip INTEGER
+);
+
+DROP TABLE IF EXISTS brands;
+CREATE TABLE brands(
+    brand_id INTEGER PRIMARY KEY,
+    label TEXT
+);
+
+DROP TABLE IF EXISTS sales;
+CREATE TABLE sales(
+    sale_id INTEGER PRIMARY KEY,
+    date DATE,
+    amount INTEGER
+);
+
+DROP TABLE IF EXISTS serviceTypes;
+CREATE TABLE serviceTypes(
+    service_id SMALLINT PRIMARY KEY,
+    description TEXT
+);
+
+DROP TABLE IF EXISTS garmentFacts;
+CREATE TABLE garmentFacts(
+    garm_id INTEGER PRIMARY KEY,
+    cust_id INTEGER,
+    sale_id INTEGER,
+    brand_id INTEGER,
+    service_id SMALLINT,
+    count INTEGER,
+    FOREIGN KEY (cust_id) REFERENCES customers (cust_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+    FOREIGN KEY (sale_id) REFERENCES sales (sale_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+    FOREIGN KEY (brand_id) REFERENCES brands (brand_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES serviceTypes (service_id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+);
+
+DELETE FROM ServiceTypes;
+
+INSERT INTO ServiceTypes (service_id, description)
+SELECT DISTINCT `Service Code`, Description
+FROM ServiceTypes_import;
+
+%%sql
+
+DELETE FROM brands;
+
+INSERT INTO brands (label)
+SELECT DISTINCT Garm_Brand
+FROM GarmentTags_import;
+
+
+DELETE FROM garmentFacts;
+
+INSERT INTO garmentFacts (garm_id, cust_id, sale_id, brand_id, count)
+SELECT DISTINCT Garm_ID, Cust_ID, Sale_ID, Garm_Count, brand_id
+FROM GarmentTags_import as g
+JOIN brands b ON g.Garm_Brand = b.label;
+
+DELETE FROM sales;
+
+INSERT INTO sales (sale_id, date, amount)
+SELECT DISTINCT gf.Sale_ID, g.Sale_Date, g.Sale_Amount
+FROM GarmentTags_import as g
+JOIN garmentFacts gf ON g.sale_id = gf.sale_id;
+
+DELETE FROM customers;
+
+INSERT INTO customers (cust_id, city, zip)
+SELECT DISTINCT gf.cust_id, g.Cust_City, g.Cust_Zip
+FROM GarmentTags_import as g
+JOIN garmentFacts gf ON g.cust_id = gf.cust_id;
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+%%sql
+SELECT count(sale_id), city
+FROM garmentFacts as G
+JOIN customers as C
+ON G.cust_id = C.cust_id
+GROUP BY city;
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+%%sql
+SELECT sum(amount) as total, city
+FROM garmentFacts as G
+JOIN customers as C
+ON G.cust_id = C.cust_id
+JOIN sales AS s
+ON G.sale_id = s.sale_id
+GROUP BY city
+ORDER BY total desc;
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+%%sql
+SELECT count(sale_id) as num_of_sales, label
+FROM garmentFacts as G
+JOIN brands B
+ON G.brand_id = B.brand_id
+WHERE label IS NOT NULL
+GROUP BY label
+ORDER BY num_of_sales desc
+LIMIT 10;
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+%%sql
+SELECT label, count(garm_id)
+FROM GarmentFacts as g
+JOIN brands as b
+ON g.brand_id = b.brand_id
+WHERE label = 'RALPH LAUREN'
+GROUP BY label;
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+%%sql
+SELECT city, count(sale_id)
+FROM garmentFacts as g
+JOIN brands as b
+ON g.brand_id = b.brand_id
+JOIN customers as c
+ON g.cust_id = c.cust_id
+WHERE label = 'RALPH LAUREN' and city IS NOT NULL
+GROUP BY city
+ORDER BY count(sale_id);
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
