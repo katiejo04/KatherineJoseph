@@ -1,0 +1,152 @@
+#cloning filepath for data
+
+!git clone https://github.com/christopherhuntley/BUAN6510.git
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Load %%sql magic
+%load_ext sql
+
+# Standard Imports
+import sqlite3
+import pandas as pd
+
+# Database connection
+%sql sqlite:///buan6510/data/Final/CourseData.db
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#importing all course data
+
+#course term possibilities are defined
+terms = ['Fall2014','Fall2015','Fall2016','Fall2017',
+         'Fall2018','Spring2015','Spring2016','Spring2017',
+         'Spring2018','Spring2019','SpringBreak2017','Summer2015',
+         'Summer2016','Summer2017','Summer2018','Winter2015','Winter2016','Winter2017','Winter2018']
+
+conn = sqlite3.connect('buan6510/data/Final/CourseData.db')   
+with conn:
+  for term in terms:
+    filepath = '/content/BUAN6510/data/banner/'+term+'/courses.csv'
+    data = pd.read_csv(filepath)
+    data.to_sql('IMPORT_COURSE_OFFERINGS',conn,if_exists='append',index=False)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#creating the Instructor table in the CourseData.db
+
+%%sql
+
+DROP TABLE IF EXISTS Instructor;
+
+CREATE TABLE Instructor(
+    instructor_id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email_address TEXT,
+    office_location TEXT
+);
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#creating the Section table in the CourseData.db
+
+%%sql
+
+DROP TABLE IF EXISTS Section;
+
+CREATE TABLE Section(
+    section_id INTEGER PRIMARY KEY,
+    crn INTEGER NOT NULL,
+    catalog_id TEXT NOT NULL,
+    section TEXT NOT NULL,
+    credit INTEGER NOT NULL,
+    course TEXT NOT NULL,
+    term TEXT,
+    capacity INTEGER NOT NULL,
+    actual INTEGER NOT NULL,
+    remaining INTEGER NOT NULL,
+    instructor_id INTEGER,
+    FOREIGN KEY (instructor_id) REFERENCES Instructor (instructor_id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE);
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Insert data from the IMPORT_COURSE_OFFERINGS csv file into the Instructor table in the CourseData.db
+
+# Create the Instructor and Section_Facts table in the CourseDataWarehouse.db
+
+%%sql
+
+
+DROP TABLE IF EXISTS Instructor;
+
+CREATE TABLE Instructor(
+    instructor_id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email_address TEXT,
+    office_location TEXT
+);
+
+
+DROP TABLE IF EXISTS Section_Facts;
+
+CREATE TABLE Section_Facts(
+    section_id INTEGER PRIMARY KEY,
+    crn INTEGER NOT NULL,
+    catalog_id TEXT NOT NULL,
+    section TEXT NOT NULL,
+    credit INTEGER NOT NULL,
+    course TEXT NOT NULL,
+    term TEXT NOT NULL,
+    capacity INTEGER NOT NULL,
+    actual INTEGER NOT NULL,
+    remaining INTEGER NOT NULL,
+    instructor_id INTEGER NOT NULL,
+    FOREIGN KEY (instructor_id) REFERENCES Instructor (instructor_id)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE
+);
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Attach to the Course_Data.db from FP3
+%%sql
+attach database '/content/buan6510/data/Final/CourseData.db' as Courses_Data;
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Insert data into the Instructor table in the CourseDataWarehouse.db from the
+ # Instrutor table in the CourseData.db
+
+#1104 rows should be affected
+
+%%sql
+
+DELETE FROM main.Instructor;
+
+INSERT INTO main.Instructor (name)
+SELECT name
+FROM Courses_Data.Instructor;
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Insert data into the Section_Facts table in the CourseDataWarehouse.db from the
+ # Section_Facts table in the CourseData.db
+
+#15937 rows should be affected
+
+%%sql
+
+DELETE FROM main.Section_Facts;
+
+INSERT INTO main.Section_Facts (crn,catalog_id,section,credit,course,
+                                capacity,actual,remaining,instructor_id,term)
+SELECT DISTINCT crn,catalog_id,section,credit,course,capacity,actual,
+                remaining,instructor_id,term
+FROM Courses_Data.Section as cd
+;
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Run a query to make sure the data was inserted correctly
+
+%%sql
+
+SELECT *
+From main.Instructor
+Limit 10;
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Run a query to make sure the data was inserted correctly
+
+%%sql
+
+SELECT *
+From main.Section_Facts
+Limit 10;
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
