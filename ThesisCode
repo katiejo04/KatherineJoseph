@@ -1,0 +1,265 @@
+import pandas as pd
+import numpy as np
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+from google.colab import drive
+drive.mount('/content/drive')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#importing data from csv file
+df = pd.read_csv('/content/drive/MyDrive/Capstone/Data/capstone_data_daily.csv', index_col='Unnamed: 0')
+#checking data
+df.head(5)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y = df[['BTC_cls','BTC_v']]
+df_y.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y.dtypes
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y['BTC_v(K)'] = df_y['BTC_v']
+df_y.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y['BTC_cls'] = df_y['BTC_cls'].replace({',':''}, regex = True)
+df_y['BTC_v(K)'] = df_y['BTC_v(K)'].replace({'K':'','M':''}, regex = True)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y['BTC_cls'] = pd.to_numeric(df_y['BTC_cls'])
+df_y['BTC_v(K)'] = pd.to_numeric(df_y['BTC_v(K)'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y['BTC_v(K)'] = np.where(df_y['BTC_v'].str.contains('M'), df_y['BTC_v(K)'].apply(lambda x: x*1000), df_y['BTC_v(K)'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y[df_y['BTC_v'].str.contains('M')]
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2 = df_y.drop(columns=['BTC_v'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2.dtypes
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2 = df_y2.rename(columns={'BTC_cls':'y1','BTC_v(K)':'y2'})
+df_y2.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2 = df_y2.drop(columns=['y2'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2['p_ch'] = df_y2['y1'].pct_change()
+df_y2.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+def bin_y(x):
+  if x < -0.3:
+    return 0
+  elif x >= -0.3 and x < -0.2:
+    return 1
+  elif x >= -0.2 and x < -0.1:
+    return 2
+  elif x >= -0.1 and x < 0:
+    return 3
+  elif x >= 0 and x < 0.1:
+    return 4
+  elif x >= 0.1 and x < 0.2:
+    return 5
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2['y1_bin'] = df_y2['p_ch'].apply(bin_y)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2 = df_y2.drop(columns=['y1','p_ch'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2 = df_y2.rename(columns={'y1_bin':'y1'})
+df_y2.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_x = df.drop(columns=['BTC_cls','BTC_v', 'Date'])
+df_x
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_x.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Removing Missing Values
+
+#check number of missing values in X_train
+df_x.isna().sum()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#check percent of missing values in each column in X_train
+(df_x.isna().sum()/df_x.shape[0]).round(4) * 100
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#create a copy of df_x
+df_x1 = df_x.copy()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#forward fill NaN
+##oil_usd, gold_usd, silver_usd, EuroNxt_cls, EuroNxt_v, inf_rate, DJ_cls, DJ_v, HK_cls, HK_v, JP_cls, JP_v, NASDAQ_cls, NASDAQ_v, NYSE_cls, NYSE_v
+###Binance_cls, Binance_v, XRP_cls, XRP_v, LTC_cls, LTC_v, eth_cls, eth_v
+df_x1[['oil_usd', 'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'inf_rate', 'DJ_cls',
+               'DJ_v', 'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v', 'NYSE_cls', 'NYSE_v']] = df_x1[['oil_usd','gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'inf_rate', 'DJ_cls',
+               'DJ_v', 'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v', 'NYSE_cls', 'NYSE_v']].fillna(method='ffill')
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_x1.isna().sum()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#check percent of missing values in each column in X_train
+(df_x1.isna().sum()/df_x1.shape[0]).round(4) * 100
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Splitting Data
+
+#define X
+X = df_x1
+
+#define y
+y = df_y2
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#### complete your code below
+#### import `train_test_split` from `sklearn.model_selection`
+from sklearn.model_selection import train_test_split
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#### split X, y into training and testing, using 75/25 split, and set `random_state = 2021`
+X_train,X_test,y_train,y_test=train_test_split(X,y,test_size=0.25,random_state=1234)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train.shape
+X_test.shape
+y_train.shape
+y_test.shape
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Remove Error Values
+
+X_train1 = X_train.copy()
+X_test1 = X_test.copy()
+
+X_train1.dtypes
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train1['XRP_v(K)'] = X_train1['XRP_v']
+X_train1['LTC_v(K)'] = X_train1['LTC_v']
+X_train1['BNB_v(K)'] = X_train1['BNB_v']
+X_train1['cardo_v(K)'] = X_train1['cardo_v']
+X_train1['chn_v(K)'] = X_train1['chn_v']
+X_train1['dai_v(K)'] = X_train1['dai_v']
+X_train1['eth_v(K)'] = X_train1['eth_v']
+X_train1['stell_v(K)'] = X_train1['stell_v']
+X_train1['tron_v(K)'] = X_train1['tron_v']
+X_train1['teth_v(K)'] = X_train1['teth_v']
+X_train1['doge_v(K)'] = X_train1['doge_v']
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train1[['XRP_v(K)','LTC_v(K)','BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)','eth_v(K)','stell_v(K)','tron_v(K)','teth_v(K)','doge_v(K)']] = X_train1[['XRP_v(K)','LTC_v(K)','BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)','doge_v(K)','eth_v(K)','stell_v(K)','tron_v(K)','teth_v(K)']].replace({'K':'','M':'','B':'','-':''}, regex = True)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train1['XRP_v(K)'] = pd.to_numeric(X_train1['XRP_v(K)'])
+X_train1['LTC_v(K)'] = pd.to_numeric(X_train1['LTC_v(K)'])
+X_train1['BNB_v(K)'] = pd.to_numeric(X_train1['BNB_v(K)'])
+X_train1['cardo_v(K)'] = pd.to_numeric(X_train1['cardo_v(K)'])
+X_train1['chn_v(K)'] = pd.to_numeric(X_train1['chn_v(K)'])
+X_train1['dai_v(K)'] = pd.to_numeric(X_train1['dai_v(K)'])
+X_train1['eth_v(K)'] = pd.to_numeric(X_train1['eth_v(K)'])
+X_train1['stell_v(K)'] = pd.to_numeric(X_train1['stell_v(K)'])
+X_train1['tron_v(K)'] = pd.to_numeric(X_train1['tron_v(K)'])
+X_train1['teth_v(K)'] = pd.to_numeric(X_train1['teth_v(K)'])
+X_train1['doge_v(K)'] = pd.to_numeric(X_train1['doge_v(K)'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train1['XRP_v(K)'] = np.where(X_train1['XRP_v'].str.contains('M'), X_train1['XRP_v(K)'].apply(lambda x: x*1000), X_train1['XRP_v(K)'])
+X_train1['XRP_v(K)'] = np.where(X_train1['XRP_v'].str.contains('B'), X_train1['XRP_v(K)'].apply(lambda x: x*1000000), X_train1['XRP_v(K)'])
+X_train1['LTC_v(K)'] = np.where(X_train1['LTC_v'].str.contains('M'), X_train1['LTC_v(K)'].apply(lambda x: x*1000), X_train1['LTC_v(K)'])
+X_train1['BNB_v(K)'] = np.where(X_train1['BNB_v'].str.contains('M'), X_train1['BNB_v(K)'].apply(lambda x: x*1000), X_train1['BNB_v(K)'])
+X_train1['cardo_v(K)'] = np.where(X_train1['cardo_v'].str.contains('M'), X_train1['cardo_v(K)'].apply(lambda x: x*1000), X_train1['cardo_v(K)'])
+X_train1['cardo_v(K)'] = np.where(X_train1['cardo_v'].str.contains('B'), X_train1['cardo_v(K)'].apply(lambda x: x*1000000), X_train1['cardo_v(K)'])
+X_train1['chn_v(K)'] = np.where(X_train1['chn_v'].str.contains('M'), X_train1['chn_v(K)'].apply(lambda x: x*1000), X_train1['chn_v(K)'])
+X_train1['dai_v(K)'] = np.where(X_train1['dai_v'].str.contains('M'), X_train1['dai_v(K)'].apply(lambda x: x*1000), X_train1['dai_v(K)'])
+X_train1['eth_v(K)'] = np.where(X_train1['eth_v'].str.contains('M'), X_train1['eth_v(K)'].apply(lambda x: x*1000), X_train1['eth_v(K)'])
+X_train1['eth_v(K)'] = np.where(X_train1['eth_v'].str.contains('B'), X_train1['eth_v(K)'].apply(lambda x: x*1000000), X_train1['eth_v(K)'])
+X_train1['stell_v(K)'] = np.where(X_train1['stell_v'].str.contains('M'), X_train1['stell_v(K)'].apply(lambda x: x*1000), X_train1['stell_v(K)'])
+X_train1['tron_v(K)'] = np.where(X_train1['tron_v'].str.contains('M'), X_train1['tron_v(K)'].apply(lambda x: x*1000), X_train1['tron_v(K)'])
+X_train1['tron_v(K)'] = np.where(X_train1['tron_v'].str.contains('B'), X_train1['tron_v(K)'].apply(lambda x: x*1000000), X_train1['tron_v(K)'])
+X_train1['teth_v(K)'] = np.where(X_train1['teth_v'].str.contains('M'), X_train1['teth_v(K)'].apply(lambda x: x*1000), X_train1['teth_v(K)'])
+X_train1['teth_v(K)'] = np.where(X_train1['teth_v'].str.contains('B'), X_train1['teth_v(K)'].apply(lambda x: x*1000000), X_train1['teth_v(K)'])
+X_train1['doge_v(K)'] = np.where(X_train1['doge_v'].str.contains('M'), X_train1['doge_v(K)'].apply(lambda x: x*1000), X_train1['doge_v(K)'])
+X_train1['doge_v(K)'] = np.where(X_train1['doge_v'].str.contains('B'), X_train1['doge_v(K)'].apply(lambda x: x*1000000), X_train1['doge_v(K)'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train1['eth_cls'] = X_train1['eth_cls'].replace({'-':'',',':''}, regex = True)
+X_train1['eth_cls'] = pd.to_numeric(X_train1['eth_cls'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train2 = X_train1.drop(columns=['inf_rate','XRP_v','LTC_v','BNB_v','cardo_v','chn_v','dai_v','eth_v','stell_v','tron_v','teth_v','doge_v'])
+X_train2.dtypes
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#check number of missing values in X_train
+X_train2.isna().sum()
+
+#forward fill NaN
+X_train2[['dai_cls', 'BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)']] = X_train2[['dai_cls', 'BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)']].fillna(method='ffill')
+
+#check number of missing values in X_train
+X_train2.isna().sum()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train2['oil_usd'] = X_train2['oil_usd'].fillna(X_train2['oil_usd'].median())
+X_train2['gold_usd'] = X_train2['gold_usd'].fillna(X_train2['gold_usd'].median())
+X_train2['silver_usd'] = X_train2['silver_usd'].fillna(X_train2['silver_usd'].median())
+X_train2['EuroNxt_cls'] = X_train2['EuroNxt_cls'].fillna(X_train2['EuroNxt_cls'].median())
+X_train2['EuroNxt_v'] = X_train2['EuroNxt_v'].fillna(X_train2['EuroNxt_v'].median())
+X_train2['DJ_cls'] = X_train2['DJ_cls'].fillna(X_train2['DJ_cls'].median())
+X_train2['DJ_v'] = X_train2['DJ_v'].fillna(X_train2['DJ_v'].median())
+X_train2['HK_cls'] = X_train2['HK_cls'].fillna(X_train2['HK_cls'].median())
+X_train2['HK_v'] = X_train2['HK_v'].fillna(X_train2['HK_v'].median())
+X_train2['JP_cls'] = X_train2['JP_cls'].fillna(X_train2['JP_cls'].median())
+X_train2['JP_v'] = X_train2['JP_v'].fillna(X_train2['JP_v'].median())
+X_train2['NASDAQ_cls'] = X_train2['NASDAQ_cls'].fillna(X_train2['NASDAQ_cls'].median())
+X_train2['NASDAQ_v'] = X_train2['NASDAQ_v'].fillna(X_train2['NASDAQ_v'].median())
+X_train2['NYSE_cls'] = X_train2['NYSE_cls'].fillna(X_train2['NYSE_cls'].median())
+X_train2['NYSE_v'] = X_train2['NYSE_v'].fillna(X_train2['NYSE_v'].median())
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_test1['XRP_v(K)'] = X_test1['XRP_v']
+X_test1['LTC_v(K)'] = X_test1['LTC_v']
+X_test1['BNB_v(K)'] = X_test1['BNB_v']
+X_test1['cardo_v(K)'] = X_test1['cardo_v']
+X_test1['chn_v(K)'] = X_test1['chn_v']
+X_test1['dai_v(K)'] = X_test1['dai_v']
+X_test1['eth_v(K)'] = X_test1['eth_v']
+X_test1['stell_v(K)'] = X_test1['stell_v']
+X_test1['tron_v(K)'] = X_test1['tron_v']
+X_test1['teth_v(K)'] = X_test1['teth_v']
+X_test1['doge_v(K)'] = X_test1['doge_v']
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_test1[['XRP_v(K)','LTC_v(K)','BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)','eth_v(K)','stell_v(K)','tron_v(K)','teth_v(K)','doge_v(K)']] = X_test1[['XRP_v(K)','LTC_v(K)','BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)','doge_v(K)','eth_v(K)','stell_v(K)','tron_v(K)','teth_v(K)']].replace({'K':'','M':'','B':'','-':''}, regex = True)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_test1['XRP_v(K)'] = pd.to_numeric(X_test1['XRP_v(K)'])
+X_test1['LTC_v(K)'] = pd.to_numeric(X_test1['LTC_v(K)'])
+X_test1['BNB_v(K)'] = pd.to_numeric(X_test1['BNB_v(K)'])
+X_test1['cardo_v(K)'] = pd.to_numeric(X_test1['cardo_v(K)'])
+X_test1['chn_v(K)'] = pd.to_numeric(X_test1['chn_v(K)'])
+X_test1['dai_v(K)'] = pd.to_numeric(X_test1['dai_v(K)'])
+X_test1['eth_v(K)'] = pd.to_numeric(X_test1['eth_v(K)'])
+X_test1['stell_v(K)'] = pd.to_numeric(X_test1['stell_v(K)'])
+X_test1['tron_v(K)'] = pd.to_numeric(X_test1['tron_v(K)'])
+X_test1['teth_v(K)'] = pd.to_numeric(X_test1['teth_v(K)'])
+X_test1['doge_v(K)'] = pd.to_numeric(X_test1['doge_v(K)'])
+
+X_test1['XRP_v(K)'] = np.where(X_test1['XRP_v'].str.contains('M'), X_test1['XRP_v(K)'].apply(lambda x: x*1000), X_test1['XRP_v(K)'])
+X_test1['XRP_v(K)'] = np.where(X_test1['XRP_v'].str.contains('B'), X_test1['XRP_v(K)'].apply(lambda x: x*1000000), X_test1['XRP_v(K)'])
+X_test1['LTC_v(K)'] = np.where(X_test1['LTC_v'].str.contains('M'), X_test1['LTC_v(K)'].apply(lambda x: x*1000), X_test1['LTC_v(K)'])
+X_test1['BNB_v(K)'] = np.where(X_test1['BNB_v'].str.contains('M'), X_test1['BNB_v(K)'].apply(lambda x: x*1000), X_test1['BNB_v(K)'])
+X_test1['cardo_v(K)'] = np.where(X_test1['cardo_v'].str.contains('M'), X_test1['cardo_v(K)'].apply(lambda x: x*1000), X_test1['cardo_v(K)'])
+X_test1['cardo_v(K)'] = np.where(X_test1['cardo_v'].str.contains('B'), X_test1['cardo_v(K)'].apply(lambda x: x*1000000), X_test1['cardo_v(K)'])
+X_test1['chn_v(K)'] = np.where(X_test1['chn_v'].str.contains('M'), X_test1['chn_v(K)'].apply(lambda x: x*1000), X_test1['chn_v(K)'])
+X_test1['dai_v(K)'] = np.where(X_test1['dai_v'].str.contains('M'), X_test1['dai_v(K)'].apply(lambda x: x*1000), X_test1['dai_v(K)'])
+X_test1['eth_v(K)'] = np.where(X_test1['eth_v'].str.contains('M'), X_test1['eth_v(K)'].apply(lambda x: x*1000), X_test1['eth_v(K)'])
+X_test1['eth_v(K)'] = np.where(X_test1['eth_v'].str.contains('B'), X_test1['eth_v(K)'].apply(lambda x: x*1000000), X_test1['eth_v(K)'])
+X_test1['stell_v(K)'] = np.where(X_test1['stell_v'].str.contains('M'), X_test1['stell_v(K)'].apply(lambda x: x*1000), X_test1['stell_v(K)'])
+X_test1['tron_v(K)'] = np.where(X_test1['tron_v'].str.contains('M'), X_test1['tron_v(K)'].apply(lambda x: x*1000), X_test1['tron_v(K)'])
+X_test1['tron_v(K)'] = np.where(X_test1['tron_v'].str.contains('B'), X_test1['tron_v(K)'].apply(lambda x: x*1000000), X_test1['tron_v(K)'])
+X_test1['teth_v(K)'] = np.where(X_test1['teth_v'].str.contains('M'), X_test1['teth_v(K)'].apply(lambda x: x*1000), X_test1['teth_v(K)'])
+X_test1['teth_v(K)'] = np.where(X_test1['teth_v'].str.contains('B'), X_test1['teth_v(K)'].apply(lambda x: x*1000000), X_test1['teth_v(K)'])
+X_test1['doge_v(K)'] = np.where(X_test1['doge_v'].str.contains('M'), X_test1['doge_v(K)'].apply(lambda x: x*1000), X_test1['doge_v(K)'])
+X_test1['doge_v(K)'] = np.where(X_test1['doge_v'].str.contains('B'), X_test1['doge_v(K)'].apply(lambda x: x*1000000), X_test1['doge_v(K)'])
+
+X_test1['eth_cls'] = X_test1['eth_cls'].replace({'-':'',',':''}, regex = True)
+X_test1['eth_cls'] = pd.to_numeric(X_test1['eth_cls'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_test2 = X_test1.drop(columns=['inf_rate','XRP_v','LTC_v','BNB_v','cardo_v','chn_v','dai_v','eth_v','stell_v','tron_v','teth_v','doge_v'])
+
+X_test2.isna().sum()
+
+#forward fill NaN
+X_test2[['dai_cls', 'BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)']] = X_test2[['dai_cls', 'BNB_v(K)','cardo_v(K)','chn_v(K)','dai_v(K)']].fillna(method='ffill')
+
+X_test2.isna().sum()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_test2['oil_usd'] =X_test2['oil_usd'].fillna(X_test2['oil_usd'].median())
+X_test2['gold_usd'] = X_test2['gold_usd'].fillna(X_test2['gold_usd'].median())
+X_test2['silver_usd'] = X_test2['silver_usd'].fillna(X_test2['silver_usd'].median())
+X_test2['EuroNxt_cls'] = X_test2['EuroNxt_cls'].fillna(X_test2['EuroNxt_cls'].median())
+X_test2['EuroNxt_v'] = X_test2['EuroNxt_v'].fillna(X_test2['EuroNxt_v'].median())
+X_test2['DJ_cls'] = X_test2['DJ_cls'].fillna(X_test2['DJ_cls'].median())
+X_test2['DJ_v'] = X_test2['DJ_v'].fillna(X_test2['DJ_v'].median())
+X_test2['HK_cls'] = X_test2['HK_cls'].fillna(X_test2['HK_cls'].median())
+X_test2['HK_v'] = X_test2['HK_v'].fillna(X_train2['HK_v'].median())
+X_test2['JP_cls'] = X_test2['JP_cls'].fillna(X_test2['JP_cls'].median())
+X_test2['JP_v'] = X_test2['JP_v'].fillna(X_test2['JP_v'].median())
+X_test2['NASDAQ_cls'] = X_test2['NASDAQ_cls'].fillna(X_test2['NASDAQ_cls'].median())
+X_test2['NASDAQ_v'] = X_test2['NASDAQ_v'].fillna(X_test2['NASDAQ_v'].median())
+X_test2['NYSE_cls'] = X_test2['NYSE_cls'].fillna(X_test2['NYSE_cls'].median())
+X_test2['NYSE_v'] = X_test2['NYSE_v'].fillna(X_test2['NYSE_v'].median())
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
