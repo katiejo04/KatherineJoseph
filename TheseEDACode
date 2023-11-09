@@ -1,0 +1,127 @@
+#Inital EDA
+
+X_train2.describe().T
+
+X_test2.describe().T
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#check correlation of Xtrain
+#calculate the correlation matrix
+corr = X_train2.corr()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+sns.set(rc = {'figure.figsize':(12,8)})
+# plot the heatmap
+sns.heatmap(corr, 
+        xticklabels=corr.columns,
+        yticklabels=corr.columns)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+X_train2.corr().T
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#check correlation of Xtest
+#calculate the correlation matrix
+corr = X_test2.corr()
+
+sns.set(rc = {'figure.figsize':(12,8)})
+# plot the heatmap
+sns.heatmap(corr, 
+        xticklabels=corr.columns,
+        yticklabels=corr.columns)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#create a boxplot of each column to check for outliers
+#define dimensions of subplots (rows, columns)
+fig, axes = plt.subplots(4,1)
+sns.set(rc = {'figure.figsize':(12,8)})
+
+#create chart in each subplot
+sns.boxplot(data=X_train2, x='XRP_cls', ax=axes[0])
+sns.boxplot(data=X_train2, x='XRP_v(K)', ax=axes[1])
+sns.boxplot(data=X_test2, x='XRP_cls', ax=axes[2])
+sns.boxplot(data=X_test2, x='XRP_v(K)', ax=axes[3])
+
+*this is an example of what was done for each x value*
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_y2['y1'].value_counts()
+
+#create 
+df_y2['y1'].value_counts().plot(kind='bar', color=['green','blue','red','orange'])
+plt.show()
+
+#create a distplot of 'euribor3m' for y outcomes
+sns.displot(x=X_train2['cardo_cls'], col=df_y2['y1'])
+
+#create a distplot of 'euribor3m' for y outcomes
+sns.displot(x=X_train2['silver_usd'], col=df_y2['y1'])
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Combine X and Y Datasets
+
+df_train1 = pd.concat([X_train2, y_train], axis=1)
+df_train1.head()
+
+df_test = pd.concat([X_test2, y_test], axis=1)
+df_test.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_train1.corr().T
+
+#check correlation of Xtrain
+#calculate the correlation matrix
+corr = df_train1.corr()
+
+sns.set(rc = {'figure.figsize':(16,12)})
+# plot the heatmap
+sns.heatmap(corr, 
+        xticklabels=corr.columns,
+        yticklabels=corr.columns)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+df_train_notcrypto = df_train1[['oil_usd',
+       'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'DJ_cls', 'DJ_v',
+       'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v',
+       'NYSE_cls', 'NYSE_v', 'DFF','y1']]
+df_train_notcrypto.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Create the correlation data frame
+corr_df = df_train_notcrypto.corr().round(2)
+corr_df.head()
+
+# mask the upper triangle in ``corr_df``
+#Create a lower triangle data frame of booleans in the shape of the corr data frame
+np.tril(np.ones(corr_df.shape)).astype(np.bool)
+#Take values in the lower triangle of the corr data frame based on where true values exist in the created boolean data frame
+df_lower = corr_df.where(np.tril(np.ones(corr_df.shape)).astype(np.bool))
+df_lower = df_lower[df_lower!=1]
+df_lower
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+import seaborn as sns
+# Set the figure size
+plt.figure(figsize=(17,17))
+# Create a heatmap with the correct features
+sns.heatmap(df_lower,cmap='coolwarm', annot=True, vmin=-1, vmax=1)
+
+# Create the correlation data frame
+corr_df2 = df_train_crypto.corr().round(2)
+corr_df2.head()
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# mask the upper triangle in ``corr_df``
+#Create a lower triangle data frame of booleans in the shape of the corr data frame
+np.tril(np.ones(corr_df2.shape)).astype(np.bool)
+#Take values in the lower triangle of the corr data frame based on where true values exist in the created boolean data frame
+df_lower = corr_df2.where(np.tril(np.ones(corr_df2.shape)).astype(np.bool))
+df_lower = df_lower[df_lower!=1]
+df_lower
+
+import seaborn as sns
+# Set the figure size
+plt.figure(figsize=(17,17))
+# Create a heatmap with the correct features
+sns.heatmap(df_lower,cmap='coolwarm', annot=True, vmin=-1, vmax=1)
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#create csv
+#use .to_csv
+X_train2.to_csv('/content/drive/MyDrive/Capstone/Data/x_train.csv')
+X_test2.to_csv('/content/drive/MyDrive/Capstone/Data/x_test.csv')
+y_test.to_csv('/content/drive/MyDrive/Capstone/Data/y_test.csv')
+y_train.to_csv('/content/drive/MyDrive/Capstone/Data/y_train.csv')
+
+
+
