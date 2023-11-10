@@ -1,0 +1,149 @@
+import pandas as pd
+import numpy as np
+
+# import required packages
+# specify the version of tensorflow
+%tensorflow_version 1.x 
+import tensorflow as tf
+print(tf.__version__)
+
+from tqdm import tqdm
+import numpy as np
+import matplotlib.pyplot as plt
+%matplotlib inline
+
+#connect to google drive
+from google.colab import drive
+drive.mount('/content/drive')
+
+import pandas as pd
+import numpy as np
+
+df = pd.read_csv('/content/drive/MyDrive/Deep Learning Project/imdb_dalle - all.csv')
+
+df1 = df['Genre'].str.get_dummies(sep=', ')
+
+df2 = pd.concat([df,df1], axis=1)
+
+df2 = df2.drop(columns=['Title','Genre'])
+
+genres = df2.columns.tolist()
+
+df2[['Action',
+ 'Adventure',
+ 'Animation',
+ 'Biography',
+ 'Comedy',
+ 'Crime',
+ 'Drama',
+ 'Family',
+ 'Fantasy',
+ 'Film-Noir',
+ 'History',
+ 'Horror',
+ 'Music',
+ 'Musical',
+ 'Mystery',
+ 'Romance',
+ 'Sci-Fi',
+ 'Sport',
+ 'Thriller',
+ 'War',
+ 'Western']].sum().plot.bar(figsize=(15,10))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Neural Networks
+
+from keras.models import Sequential
+from keras_preprocessing.image import ImageDataGenerator
+from keras.layers import Dense, Activation, Flatten, Dropout, BatchNormalization
+from keras.layers import Conv2D, MaxPooling2D
+from keras import regularizers, optimizers
+import pandas as pd
+import numpy as np
+
+df=df2
+columns=['Action', 'Adventure', 'Animation', 'Biography', 'Comedy', 'Crime',
+       'Drama', 'Family', 'Fantasy', 'Film-Noir', 'History', 'Horror', 'Music',
+       'Musical', 'Mystery', 'Romance', 'Sci-Fi', 'Sport', 'Thriller', 'War',
+       'Western']
+datagen=ImageDataGenerator(rescale=1./255.)
+test_datagen=ImageDataGenerator(rescale=1./255.)
+train_generator=datagen.flow_from_dataframe(
+dataframe=df[:199],
+directory='/content/drive/MyDrive/Deep Learning Project/dalleimages',
+x_col='Pic_label',
+y_col=columns,
+batch_size=32,
+seed=42,
+shuffle=True,
+class_mode="raw",
+target_size=(100,100))
+valid_generator=test_datagen.flow_from_dataframe(
+dataframe=df[200:299],
+directory='/content/drive/MyDrive/Deep Learning Project/dalleimages',
+x_col='Pic_label',
+y_col=columns,
+batch_size=32,
+seed=42,
+shuffle=True,
+class_mode="raw",
+target_size=(100,100))
+
+model = Sequential()
+model.add(Conv2D(32, (3, 3), padding='same',
+                 input_shape=(100,100,3)))
+model.add(Activation('relu'))
+model.add(Conv2D(32, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+model.add(Conv2D(64, (3, 3), padding='same'))
+model.add(Activation('relu'))
+model.add(Conv2D(64, (3, 3)))
+model.add(Activation('relu'))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
+model.add(Flatten())
+model.add(Dense(512))
+model.add(Activation('relu'))
+model.add(Dropout(0.5))
+model.add(Dense(21, activation='softmax'))
+model.compile(optimizers.rmsprop(lr=0.0001, decay=1e-6),loss="binary_crossentropy",metrics=["accuracy"])
+
+from tensorflow.keras.utils import plot_model
+
+plot_model(model)
+
+STEP_SIZE_TRAIN=train_generator.n//train_generator.batch_size
+STEP_SIZE_VALID=valid_generator.n//valid_generator.batch_size
+history = model.fit_generator(generator=train_generator,
+                    steps_per_epoch=STEP_SIZE_TRAIN,
+                    validation_data=valid_generator,
+                    validation_steps=STEP_SIZE_VALID,
+                    epochs=10
+)
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+pd.DataFrame(history.history).plot(figsize=(8, 5))
+plt.grid(True)
+plt.gca().set_ylim(0, 1) 
+plt.show()
+
+valid_generator.reset()
+pred=model.predict_generator(valid_generator)
+
+valid_generator[0]
+
+pred[0]
+
+np.argmax(pred[0])
+
+pred[1]
+
+np.argmax(pred[1])
+
+pred[40]
+
+np.argmax(pred[40])
