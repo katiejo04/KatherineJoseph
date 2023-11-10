@@ -1,0 +1,258 @@
+#Correlation, Binning, and Feature Selection
+
+import pandas as pd
+import numpy as np
+
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+from scipy import stats
+from scipy.stats import norm
+from scipy.stats import kurtosis, skew
+from scipy.stats import boxcox
+from scipy.stats import yeojohnson
+from scipy.stats import zscore
+
+from sklearn.feature_selection import RFE
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import chi2
+from sklearn.linear_model import Ridge
+
+from sklearn.linear_model import LogisticRegression
+from sklearn import datasets
+
+import warnings
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+#importing data from csv file
+X_train = pd.read_csv('/content/drive/MyDrive/Capstone/Data/x_train2.csv', index_col='Unnamed: 0')
+#checking data
+X_train.head(5)
+
+#importing data from csv file
+X_test = pd.read_csv('/content/drive/MyDrive/Capstone/Data/x_test2.csv', index_col='Unnamed: 0')
+#checking data
+X_test.head(5)
+
+#importing data from csv file
+y_train = pd.read_csv('/content/drive/MyDrive/Capstone/Data/y_train2.csv', index_col='Unnamed: 0')
+#checking data
+y_train.head(5)
+
+#importing data from csv file
+y_test = pd.read_csv('/content/drive/MyDrive/Capstone/Data/y_test2.csv', index_col='Unnamed: 0')
+#checking data
+y_test.head(5)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Scaling with Min - Max
+##x normalized = (x - xmin)/(xmax - xmin)
+
+X_train1 = X_train.copy()
+X_train1.head(5)
+
+X_test1 = X_test.copy()
+X_test1.head(5)
+
+from sklearn import preprocessing
+
+#create a new variable for the minmaxscaler
+min_max_scaler = preprocessing.MinMaxScaler()
+
+#apply the min_max_scaler
+##set equal to a new variable
+##with create an array
+scaled_values = min_max_scaler.fit_transform(X_train1)
+
+#turn scaled array into df
+df_train_scal = pd.DataFrame(scaled_values, columns=X_train1.columns,index=X_train1.index)
+#check df
+df_train_scal.head(10)
+
+#apply the min_max_scaler
+##set equal to a new variable
+##with create an array
+scaled_values1 = min_max_scaler.fit_transform(X_test1)
+
+#turn scaled array into df
+df_test_scal = pd.DataFrame(scaled_values1, columns=X_test1.columns,index=X_test1.index)
+#check df
+df_test_scal.head(10)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Normalization
+##using Yeojohnson (for Positive and/or Negative Features)
+
+#make a copy of X_train and X_test
+X_train2 = X_train1.copy()
+X_train2.head()
+X_test2 = X_test1.copy()
+X_test2.head()
+
+X_train1.skew(axis=0)
+X_test1.skew()
+
+#import PowerTransformer
+##set equal to new variable
+##want to use yeo-johnson method to noramlize due to negative values
+from sklearn.preprocessing import PowerTransformer
+pt = PowerTransformer(method='yeo-johnson')
+
+#transform all columns in df_train
+df_train_normalized = pt.fit_transform(X_train1)
+
+#convert back into a dataframe
+df_train_normal = pd.DataFrame(df_train_normalized, columns=X_train1.columns,index=X_train1.index)
+#check dataframe
+df_train_normal.head(10)
+
+#transform all columns in df_test
+df_test_normalized = pt.fit_transform(X_test1)
+
+#convert back into a dataframe
+df_test_normal = pd.DataFrame(df_test_normalized, columns=X_test1.columns,index=X_test1.index)
+#check dataframe
+df_test_normal.head(10)
+
+#check skewness after transforming
+df_train_normal.skew(axis=0)
+#check skewness after transforming
+df_test_normal.skew(axis=0)
+
+df_test_normal.isna().sum()
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Outlier Handling
+##Values need to be 1.5 times above/below IQR (Q3-Q1) for continuous features ('XRP_cls', 'XRP_v', 'LTC_cls', 'BNB_cls', 'cardo_cls', 'cardo_v', 'chn_cls', 'dai_cls',
+'dai_v', 'doge_cls','doge_v', 'eth_cls', 'stell_cls', 'stell_v', 'tron_cls', 'tron_v', 'teth_cls', 'teth_v', 'oil_usd', 'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v',
+'DJ_cls', 'DJ_v', 'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v', 'NYSE_cls', 'NYSE_v', 'DFF')
+##Do not remove outliers for following features: 'eth_v', 'BNB_v', 'LTC_v', 'chn_v'. The majority of the values of these features are 0.
+This is because these cryptocurrencies did not exist in Sept 2017 (the start of the data).
+##Do not remove outliers from day_type (binary feature)
+
+#make a copy of X_train and X_test
+X_train3 = df_train_normal.copy()
+X_train3.head()
+X_test3 = df_test_normal.copy()
+X_test3.head()
+
+what = X_test3[['NASDAQ_cls', 'NASDAQ_v']]
+what.head()
+
+def remove_columns_outliers_stdev(df, column_list): 
+    for my_col in column_list: 
+        u_bound = df[df[my_col] > 0 ][my_col].mean() + 3 * df[my_col].std()
+        l_bound = df[df[my_col] > 0 ][my_col].mean() - 3 * df[my_col].std() 
+        
+        # if a value in the column is larger than the upper bound, set it equal to the upper bound, else keep the original value
+        df[my_col] = np.where(df[my_col] > u_bound, u_bound, df[my_col]) 
+        # if a value in the column is larger than the lower bound, set it equal to the lower bound, else keep the original value
+        df[my_col] = np.where(df[my_col] < l_bound, l_bound, df[my_col]) 
+
+X_train_list = X_train[['XRP_cls', 'LTC_cls', 'BNB_cls', 'cardo_cls', 'chn_cls', 'dai_cls',
+       'doge_cls', 'eth_cls', 'stell_cls', 'tron_cls', 'teth_cls', 'oil_usd',
+       'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'DJ_cls', 'DJ_v',
+       'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v',
+       'NYSE_cls', 'NYSE_v', 'DFF', 'XRP_v(K)', 'LTC_v(K)', 'BNB_v(K)',
+       'cardo_v(K)', 'chn_v(K)', 'dai_v(K)', 'eth_v(K)', 'stell_v(K)',
+       'tron_v(K)', 'teth_v(K)', 'doge_v(K)']]
+
+X_test_list = X_test[['XRP_cls', 'LTC_cls', 'BNB_cls', 'cardo_cls', 'chn_cls', 'dai_cls',
+       'doge_cls', 'eth_cls', 'stell_cls', 'tron_cls', 'teth_cls', 'oil_usd',
+       'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'DJ_cls', 'DJ_v',
+       'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v',
+       'NYSE_cls', 'NYSE_v', 'DFF', 'XRP_v(K)', 'LTC_v(K)', 'BNB_v(K)',
+       'cardo_v(K)', 'chn_v(K)', 'dai_v(K)', 'eth_v(K)', 'stell_v(K)',
+       'tron_v(K)', 'teth_v(K)', 'doge_v(K)']]
+
+remove_columns_outliers_stdev(df=X_train3, column_list=X_train_list) 
+
+remove_columns_outliers_stdev(df=X_test3, column_list=X_test_list) 
+
+#create a boxplot of each column to check for outliers
+#define dimensions of subplots (rows, columns)
+fig, axes = plt.subplots(4,1)
+sns.set(rc = {'figure.figsize':(12,8)})
+
+#create chart in each subplot
+sns.boxplot(data=X_train3, x='XRP_cls', ax=axes[0])
+sns.boxplot(data=X_train3, x='XRP_v(K)', ax=axes[1])
+sns.boxplot(data=X_test3, x='XRP_cls', ax=axes[2])
+sns.boxplot(data=X_test3, x='XRP_v(K)', ax=axes[3])
+*this is an example of the boxplots that were created for all variables*
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Combine X and Y Values
+
+#add y back to df_train
+df_train4 = pd.concat([X_train3, y_train], axis=1)
+df_train4.head()
+
+df_test8 = pd.concat([X_test3,y_test], axis=1)
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Feature Selection
+
+#create feature
+df_features = X_train3
+#check df
+df_features.head(5)
+
+#create target df
+df_target = y_train
+#check df
+df_target.head(5)
+
+#create features and target variables
+X = df_features
+y = df_target['y1']
+
+names = ['XRP_cls', 'LTC_cls', 'BNB_cls', 'cardo_cls', 'chn_cls', 'dai_cls',
+       'doge_cls', 'eth_cls', 'stell_cls', 'tron_cls', 'teth_cls', 'oil_usd',
+       'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'DJ_cls', 'DJ_v',
+       'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v',
+       'NYSE_cls', 'NYSE_v', 'DFF', 'XRP_v(K)', 'LTC_v(K)', 'BNB_v(K)',
+       'cardo_v(K)', 'chn_v(K)', 'dai_v(K)', 'eth_v(K)', 'stell_v(K)',
+       'tron_v(K)', 'teth_v(K)', 'doge_v(K)']
+
+# Import the necessary libraries first
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_classif
+import numpy as np
+
+# Feature extraction
+test = SelectKBest(score_func=f_classif, k=20)
+fit = test.fit(X, y)
+
+# Summarize scores
+np.set_printoptions(precision=3)
+print(fit.scores_)
+
+features = fit.transform(X)
+# Summarize selected features
+print(features[0:5,:])
+
+scores = test.scores_[test.get_support()]
+names_scores = list(zip(names, scores))
+ns_df = pd.DataFrame(data = names_scores, columns=['Feat_names','F_Scores'])
+ns_df_sorted = ns_df.sort_values(['F_Scores','Feat_names'], ascending =[False, True])
+print(ns_df_sorted)
+
+df_train5 = df_train4[['cardo_cls','oil_usd','LTC_cls','XRP_cls','dai_cls','teth_cls','EuroNxt_v','BNB_cls', 'stell_cls', 'silver_usd', 'DJ_v', 'y1']]
+
+df_test5 = df_test8[['cardo_cls','oil_usd','LTC_cls','XRP_cls','dai_cls','teth_cls','EuroNxt_v','BNB_cls', 'stell_cls', 'silver_usd', 'DJ_v', 'y1']]
+
+df_train_ncrypto = df_train4[['oil_usd',
+       'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'DJ_cls', 'DJ_v',
+       'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v',
+       'NYSE_cls', 'NYSE_v', 'DFF','y1']]
+df_test_ncrypto = df_test8[['oil_usd',
+       'gold_usd', 'silver_usd', 'EuroNxt_cls', 'EuroNxt_v', 'DJ_cls', 'DJ_v',
+       'HK_cls', 'HK_v', 'JP_cls', 'JP_v', 'NASDAQ_cls', 'NASDAQ_v',
+       'NYSE_cls', 'NYSE_v', 'DFF', 'y1']]
+
+#create csv for df_train and df_test
+#use .to_csv
+df_train5.to_csv('/content/drive/MyDrive/Capstone/df_train_2a_cont.csv')
+df_test5.to_csv('/content/drive/MyDrive/Capstone/df_test_2a_cont.csv')
+df_train_ncrypto.to_csv('/content/drive/MyDrive/Capstone/df_train_ncrypto.csv')
+df_test_ncrypto.to_csv('/content/drive/MyDrive/Capstone/df_test_ncrypto.csv')
+
+
