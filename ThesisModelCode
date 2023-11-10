@@ -1,0 +1,160 @@
+import pandas as pd
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import MinMaxScaler
+import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib
+plt.style.use('ggplot')
+%matplotlib inline
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#K-means
+
+kmeans = KMeans(n_clusters=6, algorithm='auto') # You want cluster the records into 6
+kmeans.fit(X_train)
+
+y_pred = kmeans.predict(X_test)
+
+# import the metrics class
+from sklearn import metrics
+cnf_matrix = metrics.confusion_matrix(y_test, y_pred)
+cnf_matrix
+
+print(metrics.classification_report(y_test, y_pred))
+
+# Model Accuracy, how often is the classifier correct?
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+kmeans = kmeans = KMeans(n_clusters=6, max_iter=600, algorithm = 'auto')
+kmeans.fit(X_train)
+
+# Model Accuracy, how often is the classifier correct?
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+print(metrics.classification_report(y_test, y_pred))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Decision Tree
+
+# Load libraries
+import pandas as pd
+from sklearn.tree import DecisionTreeClassifier # Import Decision Tree Classifier
+from sklearn.model_selection import train_test_split # Import train_test_split function
+from sklearn import metrics #Import scikit-learn metrics module for accuracy calculation
+
+# Create Decision Tree classifer object
+clf = DecisionTreeClassifier()
+
+# Train Decision Tree Classifer
+clf = clf.fit(X_train,y_train)
+
+#Predict the response for test dataset
+y_pred = clf.predict(X_test)
+
+# Model Accuracy, how often is the classifier correct?
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+print(metrics.classification_report(y_test, y_pred))
+
+# Create Decision Tree classifer object
+clf = DecisionTreeClassifier(criterion="entropy", max_depth=3)
+
+# Train Decision Tree Classifer
+clf = clf.fit(X_train,y_train)
+
+#Predict the response for test dataset
+y_pred = clf.predict(X_test)
+
+# Model Accuracy, how often is the classifier correct?
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+print(metrics.classification_report(y_test, y_pred))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Naive Bayes
+
+#Import Gaussian Naive Bayes model
+from sklearn.naive_bayes import GaussianNB
+
+#Create a Gaussian Classifier
+gnb = GaussianNB()
+
+#Train the model using the training sets
+gnb.fit(X_train, y_train)
+
+#Predict the response for test dataset
+y_pred = gnb.predict(X_test)
+
+#Import scikit-learn metrics module for accuracy calculation
+from sklearn import metrics
+
+# Model Accuracy, how often is the classifier correct?
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+print(metrics.classification_report(y_test, y_pred))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#Random Forest
+
+#Import Random Forest Model
+from sklearn.ensemble import RandomForestClassifier
+
+#Create a Gaussian Classifier
+clf = RandomForestClassifier(n_estimators=100)
+
+#Train the model using the training sets y_pred=clf.predict(X_test)
+clf.fit(X_train,y_train)
+
+y_pred = clf.predict(X_test)
+
+from sklearn.metrics import classification_report
+print(classification_report(y_test, y_pred))
+
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#SVM
+
+#Import svm model
+from sklearn import svm
+
+#Create a svm Classifier
+clf = svm.SVC(kernel='linear') # Linear Kernel
+
+#Train the model using the training sets
+clf.fit(X_train, y_train)
+
+#Predict the response for test dataset
+y_pred = clf.predict(X_test)
+
+#Import scikit-learn metrics module for accuracy calculation
+from sklearn import metrics
+
+# Model Accuracy: how often is the classifier correct?
+print("Accuracy:",metrics.accuracy_score(y_test, y_pred))
+
+print(metrics.confusion_matrix(y_test, y_pred))
+print(metrics.classification_report(y_test, y_pred))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+#XGBoost
+
+import xgboost as xgb
+from xgboost import XGBClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+
+model = GradientBoostingClassifier(learning_rate=2.0, max_depth=1, random_state=0, n_estimators=100)
+
+model.fit(X_train,y_train)
+
+y_pred = model.predict(X_test)
+
+from sklearn.metrics import accuracy_score
+accuracy = accuracy_score(y_test, y_pred)
+print("Accuracy: %.2f%%" % (accuracy * 100.0))
+
+print(metrics.confusion_matrix(y_test, y_pred))
+print(metrics.classification_report(y_test, y_pred))
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
